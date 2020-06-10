@@ -11,6 +11,7 @@ Welcome to OpenOversight's documentation!
    :caption: Contents:
 
    area_coordinator
+   administrator
 
 OpenOversight is a Lucy Parsons Labs project to improve law enforcement
 accountability through public and crowdsourced data. We maintain a database
