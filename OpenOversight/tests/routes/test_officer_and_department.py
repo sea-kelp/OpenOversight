@@ -369,8 +369,12 @@ def test_admin_can_edit_police_department(mockdata, client, session):
         assert Department.query.filter_by(
             name='Misspelled Police Department').count() == 0
 
+        # Check that it's disabled (default).
+        assert not corrected_department.is_public
+
+        # Edit the short name and whether the department is enabled/public.
         edit_short_name_form = EditDepartmentForm(name='Corrected Police Department',
-                                                  short_name='CPD')
+                                                  short_name='CPD', is_public=True)
 
         edit_short_name_rv = client.post(
             url_for('main.edit_department', department_id=department.id),
@@ -383,6 +387,7 @@ def test_admin_can_edit_police_department(mockdata, client, session):
         edit_short_name_department = Department.query.filter_by(
             name='Corrected Police Department').one()
         assert edit_short_name_department.short_name == 'CPD'
+        assert edit_short_name_department.is_public
 
 
 def test_ac_cannot_edit_police_department(mockdata, client, session):
