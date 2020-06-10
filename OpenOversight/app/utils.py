@@ -59,7 +59,7 @@ def unit_choices():
 
 
 def dept_choices():
-    return db.session.query(Department).all()
+    return db.session.query(Department).filter(Department.is_public == True).all()
 
 
 def add_new_assignment(officer_id, form):
