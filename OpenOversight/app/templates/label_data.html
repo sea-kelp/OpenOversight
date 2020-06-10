@@ -26,20 +26,21 @@
       </p>
     </div>
 
-    {% for department in departments %}
-    <div class="text-center frontpage-leads">
-      <h2><small>{{ department.name }} ({{department.short_name}})</small></h2>
-      <p>
-        <a class="btn btn-lg btn-primary" href="{{ url_for('main.sort_images', department_id=department.id) }}">
-          <span class="glyphicon glyphicon-duplicate" aria-hidden="true"></span>
-          Image classification
-        </a>
-        <a class="btn btn-lg btn-primary" href="{{ url_for('main.label_data', department_id=department.id) }}">
-          <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
-          Officer identification
-        </a>
-      </p>
-    </div>
+    {% for department in all_departments %}
+        {% if current_user.is_administrator or current_user.is_area_coordinator or department in enabled_departments %}
+        <div class="text-center frontpage-leads">
+        <h2><small>{{ department.name }} ({{department.short_name}})</small></h2>
+        <p>
+            <a class="btn btn-lg btn-primary" href="{{ url_for('main.sort_images', department_id=department.id) }}">
+            <span class="glyphicon glyphicon-duplicate" aria-hidden="true"></span>
+            Image classification
+            </a>
+            <a class="btn btn-lg btn-primary" href="{{ url_for('main.label_data', department_id=department.id) }}">
+            <span class="glyphicon glyphicon-tag" aria-hidden="true"></span>
+            Officer identification
+            </a>
+        </p>
+        {% endif %}
     {% endfor %}
     <div class="text-center frontpage-leads">
       {% if current_user.is_administrator %}

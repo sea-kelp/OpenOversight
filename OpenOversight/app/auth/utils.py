@@ -23,3 +23,10 @@ def ac_or_admin_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def abort_403_if_user_not_admin_or_admin_required(current_user):
+    """Requires that the user be an area coordinator or administrator"""
+    if current_user.is_anonymous or not (current_user.is_administrator or
+                                         current_user.is_area_coordinator):
+        abort(403)

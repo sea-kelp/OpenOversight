@@ -34,7 +34,7 @@ from ..models import (db, Image, User, Face, Officer, Assignment, Department,
                       Description, Salary, Job)
 
 from ..auth.forms import LoginForm
-from ..auth.utils import admin_required, ac_or_admin_required
+from ..auth.utils import admin_required, ac_or_admin_required, abort_403_if_user_not_admin_or_admin_required
 
 # Ensure the file is read/write by the creator only
 SAVED_UMASK = os.umask(0o077)
@@ -104,8 +104,10 @@ def get_started_labeling():
             login_user(user, form.remember_me.data)
             return redirect(request.args.get('next') or url_for('main.index'))
         flash('Invalid username or password.')
-    departments = Department.query.all()
-    return render_template('label_data.html', departments=departments, form=form)
+    all_departments = Department.query.all()
+    enabled_departments = Department.query.filter(Department.is_public == True).all()  # noqa: E712
+    return render_template('label_data.html', all_departments=all_departments,
+                           enabled_departments=enabled_departments, form=form)
 
 
 @main.route('/sort/department/<int:department_id>', methods=['GET', 'POST'])
@@ -160,6 +162,9 @@ def officer_profile(officer_id):
                               .filter_by(department_id=officer.department_id)\
                               .order_by(Job.order.asc())\
                               .all()
+
+    if not officer.department.is_public:
+        abort_403_if_user_not_admin_or_admin_required(current_user)
 
     try:
         faces = Face.query.filter_by(officer_id=officer_id).all()
@@ -447,6 +452,13 @@ def edit_department(department_id):
 
 @main.route('/department/<int:department_id>')
 def list_officer(department_id, page=1, race=[], gender=[], rank=[], min_age='16', max_age='100', name=None, badge=None, unique_internal_identifier=None):
+    department = Department.query.filter_by(id=department_id).one()
+    if not department:
+        abort(404)
+
+    if not department.is_public:
+        abort_403_if_user_not_admin_or_admin_required(current_user)
+
     form = BrowseForm()
     form.rank.query = Job.query.filter_by(department_id=department_id, is_sworn_officer=True).order_by(Job.order.asc()).all()
     form_data = form.data
@@ -460,9 +472,6 @@ def list_officer(department_id, page=1, race=[], gender=[], rank=[], min_age='16
     form_data['unique_internal_identifier'] = unique_internal_identifier
 
     OFFICERS_PER_PAGE = int(current_app.config['OFFICERS_PER_PAGE'])
-    department = Department.query.filter_by(id=department_id).first()
-    if not department:
-        abort(404)
 
     # Set form data based on URL
     if request.args.get('min_age') and request.args.get('min_age') in [ac[0] for ac in AGE_CHOICES]:
@@ -506,6 +515,11 @@ def list_officer(department_id, page=1, race=[], gender=[], rank=[], min_age='16
 @main.route('/department/<int:department_id>/ranks')
 @main.route('/ranks')
 def get_dept_ranks(department_id=None, is_sworn_officer=None):
+    department = Department.query.filter_by(id=department_id).one()
+
+    if not department.is_public:
+        abort_403_if_user_not_admin_or_admin_required(current_user)
+
     if not department_id:
         department_id = request.args.get('department_id')
     if request.args.get('is_sworn_officer'):
@@ -813,7 +827,11 @@ def download_dept_csv(department_id):
 @main.route('/download/department/<int:department_id>/incidents', methods=['GET'])
 @limiter.limit('5/minute')
 def download_incidents_csv(department_id):
-    department = Department.query.filter_by(id=department_id).first()
+    department = Department.query.filter_by(id=department_id).one()
+
+    if not department.is_public:
+        abort_403_if_user_not_admin_or_admin_required(current_user)
+
     records = Incident.query.filter_by(department_id=department.id).all()
     if not department or not records:
         abort(404)
@@ -840,7 +858,7 @@ def download_incidents_csv(department_id):
 
 @main.route('/download/all', methods=['GET'])
 def all_data():
-    departments = Department.query.all()
+    departments = Department.query.filter(Department.is_public == True).all()  # noqa: E712
     return render_template('all_depts.html', departments=departments)
 
 
