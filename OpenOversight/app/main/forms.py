@@ -130,6 +130,8 @@ class DepartmentForm(Form):
     )
     jobs = FieldList(StringField('Job', default='', validators=[
         Regexp('\\w*')]), label='Ranks')
+    is_public = BooleanField('Make public? i.e. allow users to view this department?',
+                             default=False)
     submit = SubmitField(label='Add')
 
 

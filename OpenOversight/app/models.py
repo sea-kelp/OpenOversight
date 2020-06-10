@@ -30,6 +30,7 @@ class Department(db.Model):
     name = db.Column(db.String(255), index=True, unique=True, nullable=False)
     short_name = db.Column(db.String(100), unique=False, nullable=False)
     unique_internal_identifier_label = db.Column(db.String(100), unique=False, nullable=True)
+    is_public = db.Column(db.Boolean, unique=False, default=False, nullable=False)
 
     def __repr__(self):
         return '<Department ID {}: {}>'.format(self.id, self.name)

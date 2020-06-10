@@ -6,9 +6,9 @@
   <div class="text-center frontpage-leads">
     <h1><small>Browse a Department</small></h1>
   </div>
-
   <div class="text-center frontpage-leads">
-  {% for department in departments %}
+  {% for department in all_departments %}
+    {% if department in enabled_departments %}
     <p>
       <div class="btn-group">
         <h2>{{ department.name }}
@@ -26,10 +26,30 @@
             <a class="btn btn-lg btn-primary" href="{{ url_for('main.incident_api', department_id=department.id) }}">
                Incidents
             </a>
+          {% endif %}
         </p>
-        {% endif %}
       </div>
     </p>
+    {% elif current_user.is_administrator %}
+    <p>
+      <div class="btn-group">
+        <h2>{{ department.name }}
+            <a href="{{ url_for('main.edit_department', department_id=department.id) }}">
+              <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
+            </a>
+       </h2>
+          <p>
+          <a class="btn btn-lg btn-primary" href="{{ url_for('main.list_officer', department_id=department.id) }}">
+             Officers
+          </a>
+            <a class="btn btn-lg btn-primary" href="{{ url_for('main.incident_api', department_id=department.id) }}">
+               Incidents
+            </a>
+        </p>
+      </div>
+    </p>
+    {% endif %}
+
   {% endfor %}
   </div>
 </div>

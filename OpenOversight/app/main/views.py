@@ -1,5 +1,6 @@
 import os
 import re
+from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import text
@@ -51,8 +52,13 @@ def index():
 
 @main.route('/browse', methods=['GET'])
 def browse():
-    departments = Department.query.filter(Department.officers.any())
-    return render_template('browse.html', departments=departments)
+    enabled_departments = Department.query.filter(and_(
+        Department.officers.any(),
+        Department.is_public == True)
+    )  # noqa: E712
+    all_departments = Department.query.all()
+    return render_template('browse.html', enabled_departments=enabled_departments,
+                           all_departments=all_departments)
 
 
 @main.route('/find', methods=['GET', 'POST'])
@@ -404,6 +410,7 @@ def edit_department(department_id):
                                         department_id=department_id))
         department.name = new_name
         department.short_name = form.short_name.data
+        department.is_public = form.is_public.data
         db.session.flush()
         if form.jobs.data:
             new_ranks = []
@@ -430,6 +437,8 @@ def edit_department(department_id):
             query = text("DELETE FROM jobs WHERE department_id = :department_id AND is_sworn_officer = False AND NOT EXISTS (SELECT 1 FROM assignments WHERE assignments.job_id = jobs.id)")
             query = query.bindparams(department_id=department_id)
             db.session.execute(query)
+
+        db.session.commit()
         flash('Department {} edited'.format(department.name))
         return redirect(url_for('main.list_officer', department_id=department.id))
     else:
