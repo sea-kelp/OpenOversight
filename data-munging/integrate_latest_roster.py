@@ -25,13 +25,12 @@ import logging
 from pathlib import Path
 from typing import NamedTuple
 
-import click
-import pandas as pd
-
 import assignments as assignments_module
-import first_employed_date as first_employed_date_module
-import spd_2021_salary_data as spd_2021_salary_data_module
+import click
 import demographic_data as demographic_module
+import first_employed_date as first_employed_date_module
+import pandas as pd
+import spd_2021_salary_data as spd_2021_salary_data_module
 
 
 log = logging.getLogger(__name__)
