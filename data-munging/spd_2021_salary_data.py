@@ -15,16 +15,23 @@ log = logging.getLogger()
 URL = "https://data.seattle.gov/api/views/2khk-5ukd/rows.csv?accessType=DOWNLOAD"
 
 
+def _lower(df: pd.DataFrame) -> list[pd.DataFrame]:
+    return [df["last"].str.lower(), df["first"].str.lower()]
+
+
 def match_salary_data(
     ids: pd.DataFrame,
     url: str,
+    convert_id: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     response = requests.get(url)
     buffer = StringIO(response.text)
-    # Filter down to police department only, get only columns needed
-    df = pd.read_csv(buffer).query("Department == 'Police Department'")[
-        ["Last Name", "First Name", "Hourly Rate "]
+    # Filter down to police department related only, get only columns needed
+    df = pd.read_csv(buffer)
+    df = df[
+        df["Department"].isin(["Police Department", "Commnty Sfty and Comm Ctr Dept"])
     ]
+    df = df[["Last Name", "First Name", "Hourly Rate "]]
     df.columns = ["last", "first", "hourly"]
     ids.columns = ["id", "last", "first"]
     # Remove Jr, IV, II, III, etc.
@@ -32,9 +39,10 @@ def match_salary_data(
         r" ?((Jr)|(II)|(III)|(IV))\.?", "", regex=True
     )
     # Merge with prod data based on the first and last names
-    merged = df.merge(ids, how="left", on=["last", "first"]).astype(
-        {"id": pd.Int64Dtype()}
-    )
+    # Do a case-agnostic comparison here
+    merged = df.merge(ids, how="left", left_on=_lower(df), right_on=_lower(ids))
+    if convert_id:
+        merged = merged.astype({"id": pd.Int64Dtype()})
     # Estimate yearly pay based on hourly rate
     # ASSUMED: 40 hour work week, 50 weeks a year
     merged["salary"] = merged["hourly"] * 40 * 50
