@@ -1,34 +1,27 @@
 #!/usr/bin/env python
 """
-FIXME
-Assignment Creation Script.
+Roster update script.
 
-This script takes the historic SPD data and converts it into two new CSVs: a list of
-officers currently missing from OpenOversight, and a list of assignments for all
-officers. The missing officers are all officers who were not part of the 2021-06-30
-roster and were on the force prior to 2020.
+This script takes the current list of officers from OpenOversight and the historic
+SPD data, and produces the following:
+- New officers (including and demographics where available)
+- Assignments for all officers (this requires truncation)
+- Salary data for the new officers
 
-The original upload included some assignment/job information. *That data will need to be
-deleted before this insertion can run!!*. The following is the SQL needed to accomplish
-this:
+Since this completely reconstructs the assignments, **existing assignment data will
+need to be deleted before this upload is run!!*
+The following is the SQL needed to accomplish this:
 
 DELETE FROM assignments WHERE department_id = 1;
 DELETE FROM jobs WHERE department_id = 1;
 
 Alternatively, if there are no other departments to worry about:
-TRUNCATE jobs, assignments RESTART IDENTITY;
+TRUNCATE jobs, assignments RESTART IDENTITY
 
-Additionally, the now-defunct units can be removed with the following command:
-DELETE FROM unit_types WHERE id IN (
-    SELECT u.id
-    FROM unit_types u
-    LEFT JOIN assignments a
-        ON u.id = a.unit_id
-        WHERE a.id IS NULL
-);
+This script can theoretically be run on future roster updates (although salary date
+may need to be changed).
 """
 import logging
-from functools import partial
 from pathlib import Path
 from typing import NamedTuple
 
@@ -53,10 +46,6 @@ class DataFiles(NamedTuple):
     demographic_data: str = (
         "https://data.seattle.gov/api/views/i2q9-thny/rows.csv?accessType=DOWNLOAD"
     )
-
-
-def _data_path(csv_name: str) -> click.command:
-    return click.argument(csv_name, type=click.Path(exists=True, path_type=Path))
 
 
 def _output_data(df: pd.DataFrame, output: Path, name: str) -> None:
@@ -109,8 +98,8 @@ def main(files: DataFiles, output: Path):
 
 
 @click.command()
-@_data_path("oo_officers")
-@_data_path("historical_roster")
+@click.argument("oo_officers", type=click.Path(exists=True, path_type=Path))
+@click.argument("historical_roster", type=click.Path(exists=True, path_type=Path))
 @click.argument("output", type=click.Path(path_type=Path))
 def cli(
     oo_officers: Path,
