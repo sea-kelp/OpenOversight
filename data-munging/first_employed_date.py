@@ -11,7 +11,7 @@ import click
 import pandas as pd
 
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 def get_first_employed(

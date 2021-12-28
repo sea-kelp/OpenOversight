@@ -4,13 +4,12 @@ from io import StringIO
 from pathlib import Path
 
 import click
+import common
 import pandas as pd
 import requests
 
-import common
 
-
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 URL = "https://data.seattle.gov/api/views/i2q9-thny/rows.csv?accessType=DOWNLOAD"
 
@@ -54,9 +53,7 @@ def match_demographics(ids: pd.DataFrame, url: str, convert_badge: bool = True):
     # Badge has spaces after it in the Crisis Data CSV, so drop that
     demo.loc[:, "badge"] = demo["badge"].str.strip()
     # Merge with the ID spreadsheet based on badge
-    merged = demo.merge(
-        ids, how="left", left_on="badge", right_on="badge number"
-    )
+    merged = demo.merge(ids, how="left", left_on="badge", right_on="badge number")
     if convert_badge:
         # Convert this to a nullable integer type if specified to ensure validity
         merged = merged.astype({"id": pd.Int64Dtype()})

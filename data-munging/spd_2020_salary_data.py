@@ -3,13 +3,12 @@ import logging
 from pathlib import Path
 
 import click
+import common
 import numpy as np
 import pandas as pd
 
-import common
 
-
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 def match_salary_data(

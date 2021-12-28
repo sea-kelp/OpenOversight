@@ -37,7 +37,7 @@ import pandas as pd
 from assignment_correction import title_corrections, unit_corrections
 
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 def find_termination(df: pd.DataFrame, roster_dates: List[str]) -> Optional[str]:
@@ -124,9 +124,9 @@ def extract_all_assignments(
     ids: pd.DataFrame, hist: pd.DataFrame
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Using the IDs provided and this historical records for all rosters, construct
-    a list of assignments & officers that may be missing from OpenOversight for officers
-    that were active *after* 2020-01-01.
+    Construct a list of assignments & officers that may be missing from OpenOversight
+    for officers that were active *after* 2020-01-01 by using the IDs provided and
+    the historical records for all rosters.
     Returns the assignments and missing officers as dfs ready to be written to CSV.
     """
     # Get a sorted list of all the unique roster dates
@@ -174,9 +174,11 @@ def extract_all_assignments(
     )
     merged = merged[merged["badge"].isin(recently_active_officers)]
     # Pull out officers not currently in OO
-    missing_officers = merged[merged["ooid"].str.startswith("#")].drop_duplicates(
-        subset=["badge"], keep="last"
-    ).reset_index(drop=True)
+    missing_officers = (
+        merged[merged["ooid"].str.startswith("#")]
+        .drop_duplicates(subset=["badge"], keep="last")
+        .reset_index(drop=True)
+    )
     log.info("Building output dataframes")
     # Reduce to minimum necessary and rename columns
     missing_officers = missing_officers[

@@ -4,13 +4,12 @@ from io import StringIO
 from pathlib import Path
 
 import click
+import common
 import pandas as pd
 import requests
 
-import common
 
-
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 URL = "https://data.seattle.gov/api/views/2khk-5ukd/rows.csv?accessType=DOWNLOAD"
 
