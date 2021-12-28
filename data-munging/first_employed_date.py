@@ -14,9 +14,7 @@ import pandas as pd
 log = logging.getLogger()
 
 
-def main(assignment_path: Path, output: Path):
-    log.info("Starting import")
-    assignments = pd.read_csv(assignment_path)
+def get_first_employed(assignments: pd.DataFrame) -> pd.DataFrame:
     # Sort input CSV first by officer, then by start date (ascending).
     # Group by officer, and grab the first row. This will have their first assignment
     # date on record.
@@ -34,6 +32,13 @@ def main(assignment_path: Path, output: Path):
     first_employed = first_employed.reset_index().rename(
         {"officer id": "id", "start date": "employment_date"}, axis="columns"
     )
+    return first_employed
+
+
+def main(assignment_path: Path, output: Path):
+    log.info("Starting import")
+    assignments = pd.read_csv(assignment_path)
+    first_employed = get_first_employed(assignments)
     # Save!
     first_employed.to_csv(output, index=False)
     log.info("Finished")

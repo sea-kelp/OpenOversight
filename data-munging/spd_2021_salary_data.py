@@ -7,25 +7,25 @@ import click
 import pandas as pd
 import requests
 
+import common
+
 
 log = logging.getLogger()
 
 URL = "https://data.seattle.gov/api/views/2khk-5ukd/rows.csv?accessType=DOWNLOAD"
 
 
-def main(id_path: Path, output: Path):
-    log.info("Starting import")
-    response = requests.get(URL)
+def match_salary_data(
+    ids: pd.DataFrame,
+    url: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    response = requests.get(url)
     buffer = StringIO(response.text)
     # Filter down to police department only, get only columns needed
     df = pd.read_csv(buffer).query("Department == 'Police Department'")[
         ["Last Name", "First Name", "Hourly Rate "]
     ]
     df.columns = ["last", "first", "hourly"]
-    ids = pd.read_csv(
-        id_path,
-        usecols=["id", "first name", "last name"],
-    )
     ids.columns = ["id", "last", "first"]
     # Remove Jr, IV, II, III, etc.
     df.loc[:, "last"] = df["last"].replace(
@@ -41,9 +41,6 @@ def main(id_path: Path, output: Path):
     # Split off the links that don't have an OpenOversight badge associated with them
     _has_id = merged["id"].notna()
     missing = merged[~_has_id]
-    missing_output = output.parent / f"{output.stem}__missing.csv"
-    log.info(f"Writing {len(missing)} missing records to {missing_output}")
-    missing.to_csv(missing_output, index=False)
     merged = merged[_has_id]
     # Reduce columns even more
     merged = merged[["salary", "id"]]
@@ -59,9 +56,17 @@ def main(id_path: Path, output: Path):
     )
     # Set overtime pay to -1 since the year is not over
     merged["overtime_pay"] = -1
-    log.info(f"Writing {len(merged)} output records to {output}")
-    merged.to_csv(output, index=False)
-    log.info("Finished")
+    return merged, missing
+
+
+def main(id_path: Path, output: Path, url: str = URL):
+    log.info("Starting import")
+    ids = pd.read_csv(
+        id_path,
+        usecols=["id", "first name", "last name"],
+    )
+    merged, missing = match_salary_data(ids, url)
+    common.write_files_with_missing(merged, missing, output)
 
 
 @click.command()
