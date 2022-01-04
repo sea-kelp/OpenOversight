@@ -6,7 +6,7 @@ from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import BadData, BadSignature
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint, func
 
 # from flask_sqlalchemy.model import DefaultMeta
 from sqlalchemy.orm import validates
@@ -517,6 +517,12 @@ class User(UserMixin, BaseModel):
     @password.setter
     def password(self, password):
         self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
+
+    def by_email(email):
+        return User.query.filter(func.lower(User.email) == func.lower(email))
+
+    def by_username(username):
+        return User.query.filter(func.lower(User.username) == func.lower(username))
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
