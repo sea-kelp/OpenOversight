@@ -522,10 +522,10 @@ class User(UserMixin, BaseModel):
         return User.query.filter(func.lower(field) == func.lower(value))
 
     def by_email(email):
-        return _case_insensitive_equality(User.email, email)
+        return self._case_insensitive_equality(User.email, email)
 
     def by_username(username):
-        return _case_insensitive_equality(User.username, username)
+        return self._case_insensitive_equality(User.username, username)
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
