@@ -518,11 +518,14 @@ class User(UserMixin, BaseModel):
     def password(self, password):
         self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
 
+    def _case_insensitive_equality(field, value):
+        return User.query.filter(func.lower(field) == func.lower(value))
+
     def by_email(email):
-        return User.query.filter(func.lower(User.email) == func.lower(email))
+        return _case_insensitive_equality(User.email, email)
 
     def by_username(username):
-        return User.query.filter(func.lower(User.username) == func.lower(username))
+        return _case_insensitive_equality(User.username, username)
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
