@@ -317,21 +317,37 @@ def test_admin_can_approve_user(mockdata, client, session):
         assert user.approved
 
 
-def test_admin_updating_approved_user_does_not_send_confirmation_email(
-    mockdata, client, session
+@pytest.mark.parametrize(
+    "currently_approved, currently_confirmed, should_send_email",
+    [
+        # Approving unconfirmed user sends email
+        (False, False, True),
+        # Updating approved user does not send email
+        (True, False, False),
+        # Approving confirmed user does not send email
+        (False, True, False),
+    ],
+)
+def test_admin_approval_sends_confirmation_email(
+    currently_approved,
+    currently_confirmed,
+    should_send_email,
+    mockdata,
+    client,
+    session,
 ):
     with current_app.test_request_context():
         login_admin(client)
 
         user = User.query.filter_by(is_administrator=False).first()
         user_id = user.id
-        user.approved = True
-        user.confirmed = False
+        user.approved = currently_approved
+        user.confirmed = currently_confirmed
         db.session.commit()
 
         user = User.query.get(user_id)
-        assert user.approved
-        assert not user.confirmed
+        assert user.approved == currently_approved
+        assert user.confirmed == currently_confirmed
 
         form = EditUserForm(
             approved=True,
@@ -344,72 +360,9 @@ def test_admin_updating_approved_user_does_not_send_confirmation_email(
             follow_redirects=True,
         )
 
-        assert "new confirmation email" not in rv.data.decode("utf-8")
-        assert "updated!" in rv.data.decode("utf-8")
-
-
-def test_admin_approving_unconfirmed_user_sends_confirmation_email(
-    mockdata, client, session
-):
-    with current_app.test_request_context():
-        login_admin(client)
-
-        user = User.query.filter_by(is_administrator=False).first()
-        user_id = user.id
-        user.approved = False
-        user.confirmed = False
-        db.session.commit()
-
-        user = User.query.get(user_id)
-        assert not user.approved
-        assert not user.confirmed
-
-        form = EditUserForm(
-            approved=True,
-            submit=True,
-        )
-
-        rv = client.post(
-            url_for("auth.edit_user", user_id=user_id),
-            data=form.data,
-            follow_redirects=True,
-        )
-
-        assert "new confirmation email" in rv.data.decode("utf-8")
-        assert "updated!" in rv.data.decode("utf-8")
-
-        user = User.query.get(user_id)
-        assert user.approved
-
-
-def test_admin_approving_confirmed_user_does_not_send_confirmation_email(
-    mockdata, client, session
-):
-    with current_app.test_request_context():
-        login_admin(client)
-
-        user = User.query.filter_by(is_administrator=False).first()
-        user_id = user.id
-        user.approved = False
-        user.confirmed = True
-        db.session.commit()
-
-        user = User.query.get(user_id)
-        assert not user.approved
-        assert user.confirmed
-
-        form = EditUserForm(
-            approved=True,
-            submit=True,
-        )
-
-        rv = client.post(
-            url_for("auth.edit_user", user_id=user_id),
-            data=form.data,
-            follow_redirects=True,
-        )
-
-        assert "new confirmation email" not in rv.data.decode("utf-8")
+        assert (
+            "new confirmation email" in rv.data.decode("utf-8")
+        ) == should_send_email
         assert "updated!" in rv.data.decode("utf-8")
 
         user = User.query.get(user_id)
