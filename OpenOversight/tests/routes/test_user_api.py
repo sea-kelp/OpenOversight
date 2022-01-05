@@ -315,3 +315,71 @@ def test_admin_can_approve_user(mockdata, client, session):
 
         user = User.query.get(user_id)
         assert user.approved
+
+
+def test_admin_approving_unconfirmed_user_sends_confirmation_email(
+    mockdata, client, session
+):
+    with current_app.test_request_context():
+        login_admin(client)
+
+        user = User.query.filter_by(is_administrator=False).first()
+        user_id = user.id
+        user.approved = False
+        user.confirmed = False
+        db.session.commit()
+
+        user = User.query.get(user_id)
+        assert not user.approved
+        assert not user.confirmed
+
+        form = EditUserForm(
+            approved=True,
+            submit=True,
+        )
+
+        rv = client.post(
+            url_for("auth.edit_user", user_id=user_id),
+            data=form.data,
+            follow_redirects=True,
+        )
+
+        assert "new confirmation email" in rv.data.decode("utf-8")
+        assert "updated!" in rv.data.decode("utf-8")
+
+        user = User.query.get(user_id)
+        assert user.approved
+
+
+def test_admin_approving_confirmed_user_does_not_send_confirmation_email(
+    mockdata, client, session
+):
+    with current_app.test_request_context():
+        login_admin(client)
+
+        user = User.query.filter_by(is_administrator=False).first()
+        user_id = user.id
+        user.approved = False
+        user.confirmed = True
+        db.session.commit()
+
+        user = User.query.get(user_id)
+        assert not user.approved
+        assert user.confirmed
+
+        form = EditUserForm(
+            approved=True,
+            submit=True,
+        )
+
+        rv = client.post(
+            url_for("auth.edit_user", user_id=user_id),
+            data=form.data,
+            follow_redirects=True,
+        )
+
+        assert "new confirmation email" not in rv.data.decode("utf-8")
+        assert "updated!" in rv.data.decode("utf-8")
+
+        user = User.query.get(user_id)
+        assert user.approved

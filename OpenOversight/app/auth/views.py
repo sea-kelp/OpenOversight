@@ -319,7 +319,17 @@ def edit_user(user_id):
                 form.populate_obj(user)
                 db.session.add(user)
                 db.session.commit()
+
+                # automatically send a confirmation email when approving an unconfirmed user
+                if (
+                    not (current_user.approved)
+                    and user.approved
+                    and not (user.confirmed)
+                ):
+                    admin_resend_confirmation(user)
+
                 flash("{} has been updated!".format(user.username))
+
                 return redirect(url_for("auth.edit_user", user_id=user.id))
             else:
                 flash("Invalid entry")
