@@ -1,4 +1,4 @@
-Faker==15.0.0
+Faker==15.1.1
 flake8==5.0.4
 ipython
 mypy==0.981
