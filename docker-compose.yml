@@ -29,7 +29,6 @@ services:
     secrets:
       - source: service-account-key
         target: /usr/src/app/service_account_key.json
-    command: OpenOversight/scripts/entrypoint.sh
 
 volumes:
   postgres:
