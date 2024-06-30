@@ -60,8 +60,11 @@ fresh-start: dotenv
 	@just down -v
 	@just build
 
-	# Start up and populate fields
+	# Prepare the database
 	{{ RUN_WEB }} python create_db.py
+	{{ RUN_WEB }} flask db stamp
+
+	# Populate users and data
 	{{ RUN_WEB }} flask make-admin-user
 	{{ RUN_WEB }} flask add-department "Seattle Police Department" "SPD" "WA"
 	{{ RUN_WEB }} flask bulk-add-officers /data/init_data.csv
@@ -91,7 +94,7 @@ lock:
 
 # Run Flask-Migrate tasks in the web container
 db +migrateargs:
-    just run --no-deps web flask db {{ migrateargs }}
+    just run web flask db {{ migrateargs }}
 
 # Run unit tests in the web container
 test *pytestargs:
