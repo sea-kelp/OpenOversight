@@ -33,32 +33,63 @@ from OpenOversight.app.utils.general import normalize_gender, prompt_yes_no, str
 
 
 @click.command()
+@click.option(
+    "-u",
+    "--username",
+    "supplied_username",
+    help="username for the admin account",
+)
+@click.option(
+    "-e",
+    "--email",
+    "supplied_email",
+    help="email for the admin account",
+)
+@click.option(
+    "-p",
+    "--password",
+    "supplied_password",
+    help="password for the admin account",
+)
 @with_appcontext
-def make_admin_user():
+def make_admin_user(
+    supplied_username: str | None,
+    supplied_email: str | None,
+    supplied_password: str | None,
+):
     """Add confirmed administrator account."""
-    while True:
-        username = input("Username: ")
-        user = User.by_username(username).one_or_none()
-        if user:
-            print("Username is already in use")
-        else:
-            break
+    if supplied_username:
+        username = supplied_username
+    else:
+        while True:
+            username = input("Username: ")
+            user = User.by_username(username).one_or_none()
+            if user:
+                print("Username is already in use")
+            else:
+                break
 
-    while True:
-        email = input("Email: ")
-        user = User.by_email(email).one_or_none()
-        if user:
-            print("Email address already in use")
-        else:
-            break
+    if supplied_email:
+        email = supplied_email
+    else:
+        while True:
+            email = input("Email: ")
+            user = User.by_email(email).one_or_none()
+            if user:
+                print("Email address already in use")
+            else:
+                break
 
-    while True:
-        password = getpass("Password: ")
-        password_again = getpass("Type your password again: ")
+    if supplied_password:
+        password = supplied_password
+    else:
+        while True:
+            password = getpass("Password: ")
+            password_again = getpass("Type your password again: ")
 
-        if password == password_again:
-            break
-        print("Passwords did not match")
+            if password == password_again:
+                break
+            print("Passwords did not match")
 
     u = User(
         username=username,
