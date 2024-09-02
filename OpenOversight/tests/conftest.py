@@ -298,13 +298,10 @@ def db(app):
     with app.app_context():
         _db.app = app
         _db.create_all()
-        connection = _db.engine.connect()
-        session = scoped_session(session_factory=sessionmaker(bind=connection))
-        _db.session = session
-        add_mockdata(session)
-        session.commit()
-        connection.close()
-        session.remove()
+        with _db.engine.begin() as connection:
+            _db.session = scoped_session(sessionmaker(bind=connection))
+            add_mockdata(_db.session)
+            _db.session.remove()
 
         yield _db
 
@@ -312,17 +309,16 @@ def db(app):
 @pytest.fixture(scope="function")
 def session(db):
     """Creates a new database session for a test."""
-    connection = db.engine.connect()
-    transaction = connection.begin()
+    with db.engine.connect() as connection, connection.begin() as tx:
+        db.session = scoped_session(sessionmaker(bind=connection))
 
-    session = scoped_session(session_factory=sessionmaker(bind=connection))
-    db.session = session
-
-    yield session
-
-    transaction.rollback()
-    connection.close()
-    session.remove()
+        try:
+            yield db.session
+        finally:
+            db.session.remove()
+            # If an error was raised during test, tx is already rolled back
+            if tx.is_active:
+                tx.rollback()
 
 
 @pytest.fixture
@@ -674,7 +670,7 @@ def add_mockdata(session):
 
     test_incidents = [
         Incident(
-            date=date(2016, 3, 16),
+            date=date(2017, 12, 11),
             time=time(4, 20),
             report_number="42",
             description="A thing happened",
@@ -688,7 +684,7 @@ def add_mockdata(session):
         ),
         Incident(
             date=date(2017, 12, 11),
-            time=time(2, 40),
+            time=time(4, 40),
             report_number="38",
             description="A thing happened",
             department_id=2,
@@ -720,7 +716,7 @@ def add_mockdata(session):
     users_that_can_create_notes = [test_admin, test_area_coordinator]
 
     # for testing routes
-    first_officer = _db.session.get(Officer, 1)
+    first_officer = session.get(Officer, 1)
     note = build_note(first_officer, test_admin)
     session.add(note)
     for officer in Officer.query.limit(20):
@@ -733,7 +729,7 @@ def add_mockdata(session):
     users_that_can_create_descriptions = [test_admin, test_area_coordinator]
 
     # for testing routes
-    first_officer = _db.session.get(Officer, 1)
+    first_officer = session.get(Officer, 1)
     description = build_description(first_officer, test_admin)
     session.add(description)
     for officer in Officer.query.limit(20):
